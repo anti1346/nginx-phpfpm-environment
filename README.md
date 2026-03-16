@@ -21,3 +21,10 @@ docker exec -it php-fpm composer create-project --prefer-dist laravel/laravel .
 ```
 docker exec -it php-fpm chown -R www-data:www-data storage bootstrap/cache
 ```
+```
+vim www/.env
+REDIS_CLIENT=phpredis
+REDIS_HOST=redis-node-1
+REDIS_PASSWORD=redis_password
+REDIS_PORT=7001
+```
