@@ -13,13 +13,18 @@ docker compose exec php-fpm /bin/sh
 curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 ```
 ```
-composer create-project --prefer-dist laravel/laravel .
+docker compose exec php-fpm composer create-project --prefer-dist laravel/laravel .
 ```
 ```
-docker exec -it php-fpm composer create-project --prefer-dist laravel/laravel .
+docker compose exec php-fpm php artisan route:clear
+docker compose exec php-fpm php artisan config:clear
+docker compose exec php-fpm php artisan cache:clear
 ```
 ```
-docker exec -it php-fpm chown -R www-data:www-data storage bootstrap/cache
+docker compose exec php-fpm php artisan route:list
+```
+```
+docker compose exec php-fpm chown -R www-data:www-data storage bootstrap/cache
 ```
 ```
 vim www/.env
