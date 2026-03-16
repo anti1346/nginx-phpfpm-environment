@@ -1,0 +1,166 @@
+services:
+
+  nginx:
+    image: nginx:1.29-alpine
+    container_name: nginx
+    hostname: nginx
+    volumes:
+      - ./html:/var/www/html
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - php-fpm
+    ports:
+      - "80:80"
+    networks:
+      - laravel-network
+
+  php-fpm:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    image: anti1346/php-fpm:8.3
+    container_name: php-fpm
+    hostname: php-fpm
+    environment:
+      - DB_HOST=mysql
+      - DB_DATABASE=laravel
+      - DB_USERNAME=laravel
+      - DB_PASSWORD=secret
+    volumes:
+      - ./html:/var/www/html
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis-cluster-init:
+        condition: service_started
+    networks:
+      - laravel-network
+    healthcheck:
+      test: ["CMD", "php", "-r", "echo 'OK';"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  mysql:
+    image: mysql:8.4
+    container_name: mysql
+    hostname: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: laravel
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: secret
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - laravel-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  ####### Predixy Proxy #######
+  predixy:
+    image: anti1346/predixy:1.0.5
+    container_name: predixy
+    hostname: predixy
+    volumes:
+      - ./docker/predixy/conf/predixy.conf:/etc/predixy/conf/predixy.conf
+    ports:
+      - "6379:7617"
+    networks:
+      - laravel-network
+
+  ####### Redis Cluster Nodes #######
+  redis-node-1:
+    image: redis:8.4
+    container_name: redis-node-1
+    hostname: redis-node-1
+    command: >
+      redis-server
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+      --requirepass redis_password
+      --masterauth redis_password
+    ports:
+      - "7001:6379"
+    volumes:
+      - redis-data-1:/data
+    networks:
+      - laravel-network
+
+  redis-node-2:
+    image: redis:8.4
+    container_name: redis-node-2
+    hostname: redis-node-2
+    command: >
+      redis-server
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+      --requirepass redis_password
+      --masterauth redis_password
+    ports:
+      - "7002:6379"
+    volumes:
+      - redis-data-2:/data
+    networks:
+      - laravel-network
+
+  redis-node-3:
+    image: redis:8.4
+    container_name: redis-node-3
+    hostname: redis-node-3
+    command: >
+      redis-server
+      --cluster-enabled yes
+      --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000
+      --appendonly yes
+      --requirepass redis_password
+      --masterauth redis_password
+    ports:
+      - "7003:6379"
+    volumes:
+      - redis-data-3:/data
+    networks:
+      - laravel-network
+
+  # Run cluster initialization automatically
+  redis-cluster-init:
+    image: redis:8.4
+    container_name: redis-cluster-init
+    depends_on:
+      - redis-node-1
+      - redis-node-2
+      - redis-node-3
+    entrypoint: >
+      sh -c "
+      sleep 5 &&
+      echo 'yes' | redis-cli --cluster create
+      redis-node-1:6379 redis-node-2:6379 redis-node-3:6379
+      --cluster-replicas 0
+      -a redis_password
+      "
+    networks:
+      - laravel-network
+
+volumes:
+  mysql-data:
+  redis-data-1:
+  redis-data-2:
+  redis-data-3:
+
+networks:
+  laravel-network:
+    driver: bridge
