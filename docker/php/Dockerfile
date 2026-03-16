@@ -34,8 +34,8 @@ WORKDIR /var/www/html
 RUN chmod -R 775 /var/www/html
 
 # PHP-FPM 사용자 생성 및 권한 설정
-#RUN chown -R www-data:www-data /var/www/html
-#USER www-data
+RUN chown -R www-data:www-data /var/www/html
+USER www-data
 
 # 8. health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \

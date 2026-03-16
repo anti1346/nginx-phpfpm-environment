@@ -1,2 +1,23 @@
 # nginx-phpfpm-environment
 nginx php-fpm development environment for docker container
+
+```
+docker exec -it laravel-app sh -c "cat <<'EOF' > /var/www/public/test.html
+<h1>Container Test</h1>
+EOF"
+```
+```
+docker compose exec php-fpm /bin/sh
+```
+```
+curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+```
+```
+composer create-project --prefer-dist laravel/laravel .
+```
+```
+docker exec -it php-fpm composer create-project --prefer-dist laravel/laravel .
+```
+```
+docker exec -it php-fpm chown -R www-data:www-data storage bootstrap/cache
+```
