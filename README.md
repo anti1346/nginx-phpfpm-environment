@@ -1,2 +1,2 @@
-# laravel-development-environment
-laravel development environment for docker container
+# nginx-phpfpm-environment
+nginx php-fpm development environment for docker container
